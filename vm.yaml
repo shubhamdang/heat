@@ -1,0 +1,55 @@
+heat_template_version: 2021-04-16
+
+parameters:
+  name:
+    type: string
+    description: Name of the vm
+  
+  flavor:
+    type: string
+    description: Name of flavor
+
+  image:
+    type: string
+    description: Name of FCGW Image
+
+  network:
+    type: string
+    description: Name of network
+
+  key:
+    type: string
+    description: Name of network
+  
+  vol_size:
+    type: number
+    description: Size of volume
+
+
+
+resources:
+  vol:
+    type: OS::Cinder::Volume
+    properties:
+      size: {get_param: vol_size} 
+      image: { get_param: image }
+
+  server:
+    depends_on: [vol]
+    type: OS::Nova::Server
+    properties:
+      key_name: { get_param: key }
+      block_device_mapping: [{"volume_id": { get_resource: vol },
+                              "delete_on_termination": true, 
+                              "device_name": "vda"}]
+      flavor: { get_param: flavor }
+      networks: 
+        - { network: { get_param: network} }
+      name: {get_param: name}
+
+
+outputs:
+  PrivateIp:
+    description: IP address in private network
+    value:
+      get_attr: [server, first_address]
